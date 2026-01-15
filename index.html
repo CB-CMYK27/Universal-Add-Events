@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create QR codes for calendar events">
+    <meta name="theme-color" content="#2563eb">
+    <title>Event QR Generator</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 32px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .qr-section {
+            display: none;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .qr-section.active {
+            display: block;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: centre;
+            margin: 24px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        #qrcode canvas {
+            margin: 0 auto;
+        }
+
+        .download-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .button-secondary {
+            background: #6b7280;
+        }
+
+        .button-secondary:hover {
+            background: #4b5563;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .datetime-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px;
+            }
+
+            .datetime-row {
+                grid-template-columns: 1fr;
+            }
+
+            .download-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Event QR Generator</h1>
+        <p class="subtitle">Create a QR code for calendar events that anyone can scan</p>
+
+        <div class="error" id="error"></div>
+
+        <form id="eventForm">
+            <div class="form-group">
+                <label for="title">Event Title *</label>
+                <input type="text" id="title" required placeholder="Team Meeting">
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" placeholder="Conference Room A or https://zoom.us/...">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" placeholder="Quarterly planning session"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="startDate">Start Date & Time *</label>
+                <div class="datetime-row">
+                    <input type="date" id="startDate" required>
+                    <input type="time" id="startTime" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="endDate">End Date & Time *</label>
+                <div class="datetime-row">
+                    <input type="date" id="endDate" required>
+                    <input type="time" id="endTime" required>
+                </div>
+            </div>
+
+            <button type="submit" class="button">Generate QR Code</button>
+        </form>
+
+        <div class="qr-section" id="qrSection">
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Your Event QR Code</h2>
+            <div id="qrcode"></div>
+            <div class="download-buttons">
+                <button class="button button-secondary" id="downloadQR">Download QR Code</button>
+                <button class="button" id="downloadICS">Download Calendar File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
